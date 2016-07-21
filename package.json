@@ -1,0 +1,48 @@
+{
+  "name": "sseries-of-tubes",
+  "version": "1.0.0",
+  "description": "Takes Express/Connect routes and creates stream.Writable endpoints for Server Sent Events",
+  "main": "./sseries-of-tubes.js",
+  "scripts": {
+    "test": "npm run test:modules && npm run test:coverage",
+    "test:modules": "mocha --recursive --compilers coffee:iced-coffee-script/register --require iced-coffee-coverage/register-istanbul test/",
+    "test:coverage": "istanbul report",
+    "build": "iced --bare --map -o ./ -c src/*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/nextorigin/sseries-of-tubes.git"
+  },
+  "keywords": [
+    "sse",
+    "express",
+    "connect",
+    "routes",
+    "stream",
+    "writable",
+    "streaming",
+    "poll",
+    "polling",
+    "eventsource",
+    "serversentevents"
+  ],
+  "author": "doublerebel",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nextorigin/sseries-of-tubes/issues"
+  },
+  "homepage": "https://github.com/nextorigin/sseries-of-tubes#readme",
+  "dependencies": {
+    "restify-errors": "^4.2.3",
+    "sse-stream": "0.0.4",
+    "through2": "^2.0.1"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "iced-coffee-coverage": "^1.0.2",
+    "iced-coffee-script": "^108.0.11",
+    "istanbul": "^0.4.4",
+    "mocha": "^2.5.3",
+    "sinon": "^1.17.4"
+  }
+}
