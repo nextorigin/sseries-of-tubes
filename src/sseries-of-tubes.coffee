@@ -32,7 +32,7 @@ class SSEriesOfTubes extends EventEmitter
   checkHeaders: (req) ->
     req.accepts ["text/event-stream", "text/x-dom-event-stream"]
 
-  plumb: (fn, interval = 5) -> (req, res, next) =>
+  plumb: (fn, interval) -> (req, res, next) =>
     return next new Errors.NotAcceptableError unless @checkHeaders req
 
     {originalUrl}  = req
@@ -41,12 +41,15 @@ class SSEriesOfTubes extends EventEmitter
       source = @_paths[originalUrl] = new StringTube
       @_counts[originalUrl] = 0
 
-      res.json = (data) => source.write @encode data
-      res.text = res.send = res.json
-      poll     = -> fn req, res, next
-      @_pollers[originalUrl] = setInterval poll, interval * 1000
+      if fn and interval
+        res.json = (data) => source.write @encode data
+        res.text = res.send = res.json
+        poll     = -> fn req, res, next
+        @_pollers[originalUrl] = setInterval poll, interval * 1000
 
-      @emit "poll", originalUrl
+        @emit "poll", originalUrl
+      else
+        @emit "plumb", originalUrl
 
     client = new Client req, res
     index  = (@_clients.push client) - 1
@@ -68,8 +71,9 @@ class SSEriesOfTubes extends EventEmitter
     source.unpipe client
 
     if remaining < 1
-      clearInterval @_pollers[originalUrl]
-      delete @_pollers[originalUrl]
+      if @_pollers[originalUrl]
+        clearInterval @_pollers[originalUrl]
+        delete @_pollers[originalUrl]
       delete @_paths[originalUrl]
       delete @_counts[originalUrl]
       @emit "stop", originalUrl
