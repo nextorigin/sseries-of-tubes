@@ -32,6 +32,10 @@ describe "SSEriesOfTubes", ->
     server         = null
     sseriesOfTubes = null
 
+  describe "#StringTube", ->
+    it "should be a export of StringTube class", ->
+      expect(SSEriesOfTubes.StringTube).to.be.a "function"
+      expect(SSEriesOfTubes.StringTube.name).to.match /StringTube/
 
   describe "##constructor", ->
     internals = [

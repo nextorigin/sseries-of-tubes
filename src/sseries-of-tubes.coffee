@@ -6,10 +6,13 @@ Errors       = require "restify-errors"
 extend       = util._extend
 
 
-StringTube = Through.ctor {encoding: "utf8", decodeStrings: false}
+Proxy = Through.ctor {encoding: "utf8", decodeStrings: false}
+class StringTube extends Proxy
 
 
 class SSEriesOfTubes extends EventEmitter
+  @StringTube: StringTube
+
   constructor: (@server, @keepAliveInterval = 5) ->
     @_paths   = {}
     @_counts  = {}
