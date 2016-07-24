@@ -109,7 +109,7 @@ describe "SSEriesOfTubes", ->
     plumbed = null
 
     beforeEach ->
-      plumbed = sseriesOfTubes.plumb()
+      plumbed = sseriesOfTubes.plumb (->), interval
 
     afterEach ->
       plumbed = null
@@ -159,6 +159,16 @@ describe "SSEriesOfTubes", ->
       it "should emit a poll event with original url", (done) ->
         await
           sseriesOfTubes.once "poll", defer url
+          plumbed req, res, done
+
+        expect(url).to.equal originalUrl
+        done()
+
+      it "should emit a plumb event with original url", (done) ->
+        plumbed = sseriesOfTubes.plumb()
+
+        await
+          sseriesOfTubes.once "plumb", defer url
           plumbed req, res, done
 
         expect(url).to.equal originalUrl
@@ -220,7 +230,7 @@ describe "SSEriesOfTubes", ->
 
     describe "returned function", ->
       it "should unpipe the client from the source", (done) ->
-        plumbed = sseriesOfTubes.plumb()
+        plumbed = sseriesOfTubes.plumb (->), interval
         remover = sseriesOfTubes.removeClientAndMaybeStopPolling originalUrl, 0
 
         await
@@ -233,7 +243,17 @@ describe "SSEriesOfTubes", ->
 
         done()
 
-      it "should stop and delete the source if no more clients exist", (done) ->
+      it "should stop polling if no more clients exist", (done) ->
+        plumbed = sseriesOfTubes.plumb (->), interval
+        remover = sseriesOfTubes.removeClientAndMaybeStopPolling originalUrl, 0
+        plumbed req, res, done
+
+        remover()
+
+        expect(sseriesOfTubes._pollers).to.be.empty
+        done()
+
+      it "should delete the source if no more clients exist", (done) ->
         plumbed = sseriesOfTubes.plumb()
         remover = sseriesOfTubes.removeClientAndMaybeStopPolling originalUrl, 0
         plumbed req, res, done
@@ -244,7 +264,6 @@ describe "SSEriesOfTubes", ->
 
         source2 = sseriesOfTubes.source originalUrl
         expect(source2).to.not.exist
-        expect(sseriesOfTubes._pollers).to.be.empty
         expect(sseriesOfTubes._counts).to.be.empty
         done()
 
