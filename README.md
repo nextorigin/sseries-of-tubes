@@ -1,5 +1,14 @@
 # sseries-of-tubes
-Takes Express/Connect routes and creates stream.Writable endpoints for Server Sent Events
+
+[![Build Status][ci-master]][travis-ci]
+[![Coverage Status][coverage-master]][coveralls]
+[![Dependency Status][dependency]][david]
+[![devDependency Status][dev-dependency]][david]
+[![Downloads][downloads]][npm]
+
+Takes Express/Connect routes and creates stream.Writable endpoints for Server Sent Events.
+
+[![NPM](https://nodei.co/npm/sseries-of-tubes.png?downloads=true&downloadRank=true&stars=true)](https://npmjs.org/package/sseries-of-tubes)
 
 # Introduction
 
@@ -118,3 +127,14 @@ On last client disconnect, calls bound function with the url endpoint.
 # License
 
 MIT
+
+  [ci-master]: https://img.shields.io/travis/nextorigin/sseries-of-tubes/master.svg?style=flat-square
+  [travis-ci]: https://travis-ci.org/nextorigin/sseries-of-tubes
+  [coverage-master]: https://img.shields.io/coveralls/nextorigin/sseries-of-tubes/master.svg?style=flat-square
+  [coveralls]: https://coveralls.io/r/nextorigin/sseries-of-tubes
+  [dependency]: https://img.shields.io/david/nextorigin/sseries-of-tubes.svg?style=flat-square
+  [david]: https://david-dm.org/nextorigin/sseries-of-tubes
+  [dev-dependency]: https://img.shields.io/david/dev/nextorigin/sseries-of-tubes.svg?style=flat-square
+  [david-dev]: https://david-dm.org/nextorigin/sseries-of-tubes#info=devDependencies
+  [downloads]: https://img.shields.io/npm/dm/sseries-of-tubes.svg?style=flat-square
+  [npm]: https://www.npmjs.org/package/sseries-of-tubes
