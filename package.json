@@ -4,9 +4,10 @@
   "description": "Takes Express/Connect routes and creates stream.Writable endpoints for Server Sent Events",
   "main": "./sseries-of-tubes.js",
   "scripts": {
-    "test": "npm run test:modules && npm run test:coverage",
+    "test": "npm run test:modules && npm run test:report",
     "test:modules": "mocha --recursive --compilers coffee:iced-coffee-script/register --require iced-coffee-coverage/register-istanbul test/",
-    "test:coverage": "istanbul report",
+    "test:report": "istanbul report",
+    "test:coverage": "istanbul report text-summary lcov",
     "build": "iced --bare --map -o ./ -c src/*"
   },
   "repository": {
@@ -39,6 +40,7 @@
   },
   "devDependencies": {
     "chai": "^3.5.0",
+    "coveralls": "^2.11.11",
     "iced-coffee-coverage": "^1.0.2",
     "iced-coffee-script": "^108.0.11",
     "istanbul": "^0.4.4",
