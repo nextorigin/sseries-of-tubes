@@ -235,12 +235,11 @@ describe "SSEriesOfTubes", ->
     describe "returned function", ->
       it "should unpipe the client from the source", (done) ->
         plumbed = sseriesOfTubes.plumb (->), interval
-        remover = sseriesOfTubes.removeClientAndMaybeStopPolling originalUrl, 0
-
         await
           sseriesOfTubes.once "connection", defer client
           plumbed req, res, done
 
+        remover = sseriesOfTubes.removeClientAndMaybeStopPolling originalUrl, client.id
         await
           client.on "unpipe", defer()
           remover()
@@ -249,18 +248,23 @@ describe "SSEriesOfTubes", ->
 
       it "should stop polling if no more clients exist", (done) ->
         plumbed = sseriesOfTubes.plumb (->), interval
-        remover = sseriesOfTubes.removeClientAndMaybeStopPolling originalUrl, 0
-        plumbed req, res, done
+        await
+          sseriesOfTubes.once "connection", defer client
+          plumbed req, res, done
 
+        remover = sseriesOfTubes.removeClientAndMaybeStopPolling originalUrl, client.id
         remover()
 
         expect(sseriesOfTubes._pollers).to.be.empty
         done()
 
       it "should delete the source if no more clients exist", (done) ->
-        plumbed = sseriesOfTubes.plumb()
-        remover = sseriesOfTubes.removeClientAndMaybeStopPolling originalUrl, 0
-        plumbed req, res, done
+        plumbed = sseriesOfTubes.plumb (->), interval
+        await
+          sseriesOfTubes.once "connection", defer client
+          plumbed req, res, done
+
+        remover = sseriesOfTubes.removeClientAndMaybeStopPolling originalUrl, client.id
         source  = sseriesOfTubes.source originalUrl
         expect(source).to.exist
 
@@ -273,8 +277,11 @@ describe "SSEriesOfTubes", ->
 
       it "should emit a stop event with path if source is deleted", (done) ->
         plumbed = sseriesOfTubes.plumb()
-        remover = sseriesOfTubes.removeClientAndMaybeStopPolling originalUrl, 0
-        plumbed req, res, done
+        await
+          sseriesOfTubes.once "connection", defer client
+          plumbed req, res, done
+
+        remover = sseriesOfTubes.removeClientAndMaybeStopPolling originalUrl, client.id
 
         await
           sseriesOfTubes.once "stop", defer url

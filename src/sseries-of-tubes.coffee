@@ -3,6 +3,7 @@ util         = require "util"
 Through      = require "through2"
 Client       = require "sse-stream/lib/client"
 Errors       = require "restify-errors"
+uuid         = require "node-uuid"
 extend       = util._extend
 
 
@@ -55,23 +56,25 @@ class SSEriesOfTubes extends EventEmitter
         @emit "plumb", originalUrl
 
     client = new Client req, res
-    index  = (@_clients.push client) - 1
+    client.id = uuid.v4()
+    @_clients.push client
     @_counts[originalUrl]++
 
     @emit "connection", client
 
-    client.once "close", @removeClientAndMaybeStopPolling originalUrl, index
+    client.once "close", @removeClientAndMaybeStopPolling originalUrl, client.id
     source.pipe client
 
   source: (originalUrl) ->
     @_paths[originalUrl]
 
-  removeClientAndMaybeStopPolling: (originalUrl, index) -> =>
-    source    = @_paths[originalUrl]
-    [client]  = @_clients.splice index, 1
-    remaining = --@_counts[originalUrl]
+  removeClientAndMaybeStopPolling: (originalUrl, id) -> =>
+    source          = @_paths[originalUrl]
+    [client, index] = do => return [_client, i] for _client, i in @_clients when _client.id is id
 
     source.unpipe client
+    @_clients.splice index, 1
+    remaining = --@_counts[originalUrl]
 
     if remaining < 1
       if @_pollers[originalUrl]
@@ -83,7 +86,7 @@ class SSEriesOfTubes extends EventEmitter
 
   destroy: ->
     while @_clients.length
-      client = @_clients.pop()
+      client = @_clients[0]
       client.end()
       client.emit "close"
 

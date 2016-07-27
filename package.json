@@ -34,6 +34,7 @@
   },
   "homepage": "https://github.com/nextorigin/sseries-of-tubes#readme",
   "dependencies": {
+    "node-uuid": "^1.4.7",
     "restify-errors": "^4.2.3",
     "sse-stream": "0.0.4",
     "through2": "^2.0.1"
