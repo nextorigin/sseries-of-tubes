@@ -117,6 +117,7 @@ describe "SSEriesOfTubes", ->
 
     afterEach ->
       plumbed = null
+      sseriesOfTubes.destroy()
 
     it "should return a function", ->
       expect(plumbed).to.be.a "function"
@@ -199,16 +200,16 @@ describe "SSEriesOfTubes", ->
           defer1     = defer()
           defer2     = defer()
           res1.write = (data) ->
-            return if data.match /ok/
-            expect(data).to.match /data/
+            return unless data.match /data/
             expect(data).to.match /subliminal/
+            expect(data).to.match /true/
             defer1()
 
           res2       = extend {}, res
           res2.write = (data) ->
-            return if data.match /ok/
-            expect(data).to.match /data/
+            return unless data.match /data/
             expect(data).to.match /subliminal/
+            expect(data).to.match /true/
             defer2()
 
           plumbed req, res1, done
