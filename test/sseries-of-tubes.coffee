@@ -228,6 +228,127 @@ describe "SSEriesOfTubes", ->
       expect(source).to.exist
       done()
 
+  describe "##combine", ->
+    route1   = null
+    route2   = null
+    combined = null
+
+    beforeEach ->
+      route1   = sseriesOfTubes.plumb (->), interval, "/route1"
+      route2   = sseriesOfTubes.plumb (->), interval, "/route2"
+      combined = sseriesOfTubes.combine "/route1", "/route2"
+
+    afterEach ->
+      route1   = null
+      route2   = null
+      combined = null
+      sseriesOfTubes.destroy()
+
+    it "should return a function", ->
+      expect(combined).to.be.a "function"
+
+    describe "returned function", ->
+      it "should call next with 406 error and return if headers not accepted", (done) ->
+        nope = accepts: -> false
+        next = (err) ->
+          expect(err.statusCode).to.equal 406
+          expect(err.toString()).to.match /NotAcceptable/
+          done()
+
+        result = combined nope, null, next
+        expect(result).to.be.empty
+
+      it "should create a source if none exists", (done) ->
+        {_paths} = sseriesOfTubes
+
+        expect(_paths[originalUrl]).to.be.empty
+        combined req, res, done
+        expect(_paths[originalUrl]).to.respondTo "write"
+        done()
+
+      it "should use a source if it exists", (done) ->
+        {_paths} = sseriesOfTubes
+        combined req, res, done
+        source = _paths[originalUrl]
+
+        expect(source).to.respondTo "write"
+        combined req, res, done
+        expect(_paths[originalUrl]).to.equal source
+        done()
+
+      it "should start polling the routes", (done) ->
+        blackhat = spy()
+        whitehat = spy()
+        route1   = sseriesOfTubes.plumb blackhat, interval, "/route1"
+        route2   = sseriesOfTubes.plumb whitehat, interval, "/route2"
+        combined = sseriesOfTubes.combine "/route1", "/route2"
+
+        combined req, res, done
+        await setTimeout defer(), 2.5 * interval * 1000
+
+        expect(blackhat.calledTwice).to.be.true
+        expect(whitehat.calledTwice).to.be.true
+        done()
+
+      it "should emit a plumb event with original url", (done) ->
+        combined = sseriesOfTubes.plumb()
+
+        await
+          sseriesOfTubes.once "plumb", defer url
+          combined req, res, done
+
+        expect(url).to.equal originalUrl
+        done()
+
+      it "should emit a connection event with client", (done) ->
+        await
+          sseriesOfTubes.once "connection", defer client
+          combined req, res, done
+
+        expect(client).to.be.an.instanceof Client
+        done()
+
+      it "should pipe all responses to all the clients", (done) ->
+        message    = subliminal: true
+        twice      = hasrun:     "twice"
+        route1     = (rreq, rres, rnext) ->
+          rres.json message
+          rres.text message
+          rres.send message
+        route2     = (rreq, rres, rnext) ->
+          await setTimeout defer(), 3 * interval
+          rres.json twice
+          rres.text twice
+          rres.send twice
+        sseriesOfTubes.plumb route1, interval, "/route1"
+        sseriesOfTubes.plumb route2, interval, "/route2"
+        combined = sseriesOfTubes.combine "/route1", "/route2"
+
+        await
+          res1       = extend {}, res
+          defer1     = defer()
+          defer2     = defer()
+          res1.write = (data) ->
+            return unless data.match /data/
+            if data.match /subliminal/
+              expect(data).to.match /true/
+            return unless data.match /twice/
+            defer1()
+
+          res2       = extend {}, res
+          res2.write = (data) ->
+            return unless data.match /data/
+            if data.match /subliminal/
+              expect(data).to.match /true/
+            return unless data.match /twice/
+            defer2()
+
+          combined req, res1, done
+          combined req, res2, done
+
+        sseriesOfTubes.destroy()
+        done()
+
   describe "##removeClientAndMaybeStopPolling", ->
     it "should return a function", ->
       remover = sseriesOfTubes.removeClientAndMaybeStopPolling()
@@ -290,6 +411,34 @@ describe "SSEriesOfTubes", ->
 
         expect(url).to.equal originalUrl
         done()
+
+  describe "##removeClientAndMaybeStopMultiplePolling", ->
+    it "should return a function", ->
+      remover = sseriesOfTubes.removeClientAndMaybeStopMultiplePolling null, null, []
+      expect(remover).to.be.a "function"
+
+    describe "returned function", ->
+      it "should remove all pollers", (done) ->
+        sseriesOfTubes.plumb (->), interval, "/route1"
+        sseriesOfTubes.plumb (->), interval, "/route2"
+        paths    = ["/route1", "/route2"]
+        combined = sseriesOfTubes.combine paths...
+
+        await
+          sseriesOfTubes.once "connection", defer client
+          combined req, res, done
+
+        remover = sseriesOfTubes.removeClientAndMaybeStopMultiplePolling originalUrl, client.id, paths
+        i = 0
+        sseriesOfTubes.on "stop", (url) ->
+          switch ++i
+            when 1 then expect(url).to.equal originalUrl
+            when 2 then expect(url).to.equal "/route1"
+            when 3
+              expect(url).to.equal "/route2"
+              done()
+
+        remover()
 
   describe "##destroy", ->
     it "should call end on all clients", (done) ->
