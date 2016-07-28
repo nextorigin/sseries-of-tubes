@@ -37,6 +37,7 @@
     "node-uuid": "^1.4.7",
     "restify-errors": "^4.2.3",
     "sse-stream": "0.0.4",
+    "stream-combiner2-withopts": "^1.1.1",
     "through2": "^2.0.1"
   },
   "devDependencies": {
