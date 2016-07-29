@@ -113,6 +113,7 @@ class SSEriesOfTubes extends EventEmitter
       if @_pollers[originalUrl]
         clearInterval @_pollers[originalUrl]
         delete @_pollers[originalUrl]
+      source.unwrap?()
       delete @_paths[originalUrl]
       delete @_counts[originalUrl]
       @emit "stop", originalUrl

@@ -428,6 +428,8 @@ describe "SSEriesOfTubes", ->
           sseriesOfTubes.once "connection", defer client
           combined req, res, done
 
+        source   = sseriesOfTubes.source originalUrl
+        doubleoh = spy.on source, "unwrap"
         remover = sseriesOfTubes.removeClientAndMaybeStopMultiplePolling originalUrl, client.id, paths
         i = 0
         sseriesOfTubes.on "stop", (url) ->
@@ -436,6 +438,7 @@ describe "SSEriesOfTubes", ->
             when 2 then expect(url).to.equal "/route1"
             when 3
               expect(url).to.equal "/route2"
+              expect(doubleoh.called).to.be.true
               done()
 
         remover()
