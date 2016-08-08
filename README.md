@@ -76,6 +76,14 @@ returns Function route
 
 Creates a new StringTube source which polls a route to write to all clients for an endpoint.
 
+#### sseriesOfTubes.plumb(fn, interval, path)
+```coffee
+sseriesOfTubes.plumb Function route, int interval, String path
+```
+returns Function route
+
+Creates a new StringTube source which polls a route to write to all clients for an endpoint, and remembers it as `path` for use with `sseriesOfTubes.combine()`.
+
 #### sseriesOfTubes.plumb()
 ```coffee
 sseriesOfTubes.plumb()
@@ -91,6 +99,14 @@ sseriesOfTubes.source String originalUrl
 returns StringTube source
 
 Retrieves the StringTube source for an endpoint.
+
+#### sseriesOfTubes.combine(paths...)
+```coffee
+sseriesOfTubes.combine (String path)...
+```
+returns Function route
+
+Creates a new StringTube source by combining existing StringTube sources referenced by their `path`.  This way different combinations of streams can be provided without duplicating pollers.
 
 #### sseriesOfTubes.destroy()
 ```coffee
