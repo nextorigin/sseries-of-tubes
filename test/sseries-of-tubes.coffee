@@ -95,17 +95,17 @@ describe "SSEriesOfTubes", ->
       done()
 
   describe "##keepAlive", ->
-    it "should write :keepalive to every client", ->
-      blackhat = write: spy()
-      whitehat = write: spy()
+    it "should write :keepalive to every client response object", ->
+      blackhat = res: write: spy()
+      whitehat = res: write: spy()
       sseriesOfTubes._clients = [blackhat, whitehat]
 
       sseriesOfTubes.keepAlive()
 
-      expect(blackhat.write.called).to.be.true
-      expect(blackhat.write.args[0][0]).to.match
-      expect(whitehat.write.called).to.be.true
-      expect(whitehat.write.args[0][0]).to.match /:keepalive/
+      expect(blackhat.res.write.called).to.be.true
+      expect(blackhat.res.write.args[0][0]).to.match
+      expect(whitehat.res.write.called).to.be.true
+      expect(whitehat.res.write.args[0][0]).to.match /:keepalive/
 
   describe "##checkHeaders", ->
 

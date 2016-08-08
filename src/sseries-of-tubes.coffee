@@ -33,7 +33,8 @@ class SSEriesOfTubes extends EventEmitter
     delete @_keepAlivePoller
 
   keepAlive: =>
-    client.write ":keepalive #{Date.now()}\n\n" for client in @_clients
+    for client in @_clients
+      client.res.write ":keepalive #{Date.now()}\n\n"
 
   checkHeaders: (req) ->
     req.accepts ["text/event-stream", "text/x-dom-event-stream"]
