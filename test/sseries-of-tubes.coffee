@@ -107,6 +107,14 @@ describe "SSEriesOfTubes", ->
       expect(whitehat.res.write.called).to.be.true
       expect(whitehat.res.write.args[0][0]).to.match /:keepalive/
 
+    it "should flush if response object has flush method", ->
+      doubleoh = res: write: (->), flush: spy()
+      sseriesOfTubes._clients = [doubleoh]
+
+      sseriesOfTubes.keepAlive()
+
+      expect(doubleoh.res.flush.called).to.be.true
+
   describe "##checkHeaders", ->
 
   describe "##plumb", ->

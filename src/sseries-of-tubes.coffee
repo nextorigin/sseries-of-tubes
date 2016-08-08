@@ -35,6 +35,7 @@ class SSEriesOfTubes extends EventEmitter
   keepAlive: =>
     for client in @_clients
       client.res.write ":keepalive #{Date.now()}\n\n"
+      client.res.flush?()
 
   checkHeaders: (req) ->
     req.accepts ["text/event-stream", "text/x-dom-event-stream"]
@@ -49,7 +50,9 @@ class SSEriesOfTubes extends EventEmitter
       @_counts[originalUrl] = 0
 
       if fn and interval
-        res.json = (data) => source.write @encode data
+        res.json = (data) =>
+          source.write @encode data
+          res.flush?()
         res.text = res.send = res.json
         poll     = -> fn req, res, next
         @_pollers[originalUrl] = setInterval poll, interval * 1000
