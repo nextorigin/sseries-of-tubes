@@ -50,7 +50,7 @@ app.get "/sse/hello", sseriesOfTubes.plumb sendHello, 3
 # on client
 source = new EventSource "/sse/hello"
 # log {"hello": "world"} as received every 3s
-source.on "data", (data) -> console.log data
+source.onmessage = (data) -> console.log data
 
 ```
 
