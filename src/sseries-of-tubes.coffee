@@ -58,6 +58,7 @@ class SSEriesOfTubes extends EventEmitter
         @_pollers[originalUrl] = setInterval poll, interval * 1000
 
         @emit "poll", originalUrl
+        process.nextTick poll
       else
         @emit "plumb", originalUrl
 

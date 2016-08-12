@@ -164,7 +164,7 @@ describe "SSEriesOfTubes", ->
         plumbed = sseriesOfTubes.plumb route, interval
 
         plumbed req, res, done
-        await setTimeout defer(), 2.5 * interval * 1000
+        await setTimeout defer(), 1.5 * interval * 1000
 
         expect(route.calledTwice).to.be.true
         done()
@@ -292,7 +292,7 @@ describe "SSEriesOfTubes", ->
         combined = sseriesOfTubes.combine "/route1", "/route2"
 
         combined req, res, done
-        await setTimeout defer(), 2.5 * interval * 1000
+        await setTimeout defer(), 1.5 * interval * 1000
 
         expect(blackhat.calledTwice).to.be.true
         expect(whitehat.calledTwice).to.be.true
