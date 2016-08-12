@@ -46,7 +46,7 @@ class SSEriesOfTubes extends EventEmitter
     {originalUrl}  = req
     source         = @_paths[originalUrl]
     unless source
-      source = @_paths[originalUrl] = new StringTube
+      source = @_paths[originalUrl] = new @constructor.StringTube
       @_counts[originalUrl] = 0
 
       if fn and interval
