@@ -2,7 +2,7 @@ EventEmitter = require "events"
 util         = require "util"
 Through      = require "through2"
 Combine      = require "stream-combiner2-withopts"
-Client       = require "sse-stream/lib/client"
+EventClient  = require "./event-client"
 Errors       = require "restify-errors"
 uuid         = require "node-uuid"
 extend       = util._extend
@@ -14,6 +14,7 @@ class StringTube extends Proxy
 
 class SSEriesOfTubes extends EventEmitter
   @StringTube: StringTube
+  @EventClient: EventClient
 
   constructor: (@server, @keepAliveInterval = 5) ->
     @_paths   = {}
@@ -40,7 +41,7 @@ class SSEriesOfTubes extends EventEmitter
   checkHeaders: (req) ->
     req.accepts ["text/event-stream", "text/x-dom-event-stream"]
 
-  plumb: (fn, interval, path) -> @_routes[path] = (req, res, next) =>
+  plumb: (fn, interval, path, event) -> @_routes[path] = (req, res, next) =>
     return next new Errors.NotAcceptableError unless @checkHeaders req
 
     {originalUrl}  = req
@@ -51,6 +52,7 @@ class SSEriesOfTubes extends EventEmitter
 
       if fn and interval
         res.json = (data) =>
+          source.write "event: #{event}" if event
           source.write @encode data
           res.flush?()
         res.text = res.send = res.json
@@ -63,7 +65,7 @@ class SSEriesOfTubes extends EventEmitter
         @emit "plumb", originalUrl
 
     return if req.noClient
-    client = new Client req, res
+    client = new @constructor.EventClient req, res
     client.id = uuid.v4()
     @_clients.push client
     @_counts[originalUrl]++
@@ -93,7 +95,7 @@ class SSEriesOfTubes extends EventEmitter
       @_counts[originalUrl] = 0
       @emit "plumb", originalUrl
 
-    client = new Client req, res
+    client = new @constructor.EventClient req, res
     client.id = uuid.v4()
     @_clients.push client
     @_counts[originalUrl]++
