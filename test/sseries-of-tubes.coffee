@@ -1,5 +1,5 @@
 SSEriesOfTubes = require "../src/sseries-of-tubes"
-Client         = require "sse-stream/lib/client"
+EventClient    = require "../src/event-client"
 
 
 http     = require "http"
@@ -192,7 +192,7 @@ describe "SSEriesOfTubes", ->
           sseriesOfTubes.once "connection", defer client
           plumbed req, res, done
 
-        expect(client).to.be.an.instanceof Client
+        expect(client).to.be.an.instanceof EventClient
         done()
 
       it "should pipe all responses to all the clients", (done) ->
@@ -313,7 +313,7 @@ describe "SSEriesOfTubes", ->
           sseriesOfTubes.once "connection", defer client
           combined req, res, done
 
-        expect(client).to.be.an.instanceof Client
+        expect(client).to.be.an.instanceof EventClient
         done()
 
       it "should pipe all responses to all the clients", (done) ->
@@ -349,6 +349,51 @@ describe "SSEriesOfTubes", ->
             if data.match /subliminal/
               expect(data).to.match /true/
             return unless data.match /twice/
+            defer2()
+
+          combined req, res1, done
+          combined req, res2, done
+
+        sseriesOfTubes.destroy()
+        done()
+
+      it "should pipe all responses to all the clients with event tags", (done) ->
+        message    = subliminal: true
+        twice      = hasrun:     "twice"
+        route1     = (rreq, rres, rnext) ->
+          rres.json message
+          rres.text message
+          rres.send message
+        route2     = (rreq, rres, rnext) ->
+          await setTimeout defer(), 3 * interval
+          rres.json twice
+          rres.text twice
+          rres.send twice
+        sseriesOfTubes.plumb route1, interval, "/route1", "route-1"
+        sseriesOfTubes.plumb route2, interval, "/route2", "route-2"
+        combined = sseriesOfTubes.combine "/route1", "/route2"
+
+        await
+          res1       = extend {}, res
+          defer1     = defer()
+          defer2     = defer()
+          res1.write = (data) ->
+            return unless data.match /data/
+            if data.match /subliminal/
+              expect(data).to.match /true/
+              expect(data).to.match /event: route-1/
+            return unless data.match /twice/
+            expect(data).to.match /event: route-2/
+            defer1()
+
+          res2       = extend {}, res
+          res2.write = (data) ->
+            return unless data.match /data/
+            if data.match /subliminal/
+              expect(data).to.match /true/
+              expect(data).to.match /event: route-1/
+            return unless data.match /twice/
+            expect(data).to.match /event: route-2/
             defer2()
 
           combined req, res1, done
