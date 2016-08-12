@@ -1,7 +1,7 @@
 EventEmitter = require "events"
 util         = require "util"
 Through      = require "through2"
-Combine      = require "stream-combiner2-withopts"
+{Merge}      = require "stream-combiner2-withopts"
 EventClient  = require "./event-client"
 Errors       = require "restify-errors"
 uuid         = require "node-uuid"
@@ -91,7 +91,7 @@ class SSEriesOfTubes extends EventEmitter
     source         = @_paths[originalUrl]
     unless source
       sources = (@_paths[path] for path in paths)
-      source  = @_paths[originalUrl] = Combine sources, encoding: "utf8", decodeStrings: false
+      source  = @_paths[originalUrl] = Merge sources, encoding: "utf8", decodeStrings: false
       @_counts[originalUrl] = 0
       @emit "plumb", originalUrl
 
