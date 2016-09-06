@@ -8,7 +8,7 @@
 
 Takes Express/Connect routes and creates stream.Writable endpoints for Server Sent Events.
 
-[![NPM](https://nodei.co/npm/sseries-of-tubes.png?downloads=true&downloadRank=true&stars=true)](https://npmjs.org/package/sseries-of-tubes)
+[![NPM][npm-stats]][npm]
 
 # Introduction
 
@@ -162,3 +162,4 @@ MIT
   [david-dev]: https://david-dm.org/nextorigin/sseries-of-tubes#info=devDependencies
   [downloads]: https://img.shields.io/npm/dm/sseries-of-tubes.svg?style=flat-square
   [npm]: https://www.npmjs.org/package/sseries-of-tubes
+  [npm-stats]: https://nodei.co/npm/sseries-of-tubes.png?downloads=true&downloadRank=true&stars=true
