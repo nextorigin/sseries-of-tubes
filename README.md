@@ -108,6 +108,14 @@ returns Function route
 
 Creates a new StringTube source by combining existing StringTube sources referenced by their `path`.  This way different combinations of streams can be provided without duplicating pollers.  Requires a `router` conforming to the express.Router interface for method `handle`.
 
+#### sseriesOfTubes.multiplex(router, param = "streams")
+```coffee
+sseriesOfTubes.multiplex express.Router router, String param
+```
+returns Function route
+
+Creates new StringTube sources by dynamically combining existing StringTube sources, referenced by their `path` in an comma-separated list provided by the client in the query or body as parameter `param`.  This method is similar to `combine`, but works with paths that have route parameters.  Requires a `router` conforming to the express.Router interface for method `handle`.
+
 #### sseriesOfTubes.destroy()
 ```coffee
 sseriesOfTubes.destroy()
