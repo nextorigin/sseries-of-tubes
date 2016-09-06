@@ -1,5 +1,6 @@
 SSEriesOfTubes = require "../src/sseries-of-tubes"
 EventClient    = require "../src/event-client"
+express        = require "express"
 
 
 http     = require "http"
@@ -12,24 +13,27 @@ extend   = util._extend
 
 describe "SSEriesOfTubes", ->
   interval       = 0.01
-  originalUrl    = "/test"
-  reqMock        = {originalUrl, headers: {}, accepts: (-> true), socket: setNoDelay: ->}
+  originalUrl    = url = "/test"
+  reqMock        = {originalUrl, url, headers: {}, accepts: (-> true), method: "GET", socket: setNoDelay: ->}
   resMock        = once: (->), on: (->), writeHead: (->), write: (->), end: (->)
   req            = null
   res            = null
   server         = null
+  router         = null
   sseriesOfTubes = null
 
   beforeEach ->
     req            = extend {}, reqMock
     res            = extend {}, resMock
     server         = new http.Server
+    router         = new express.Router
     sseriesOfTubes = new SSEriesOfTubes server, interval
 
   afterEach ->
     req            = null
     res            = null
     server         = null
+    router         = null
     sseriesOfTubes = null
 
   describe "#StringTube", ->
@@ -144,19 +148,19 @@ describe "SSEriesOfTubes", ->
       it "should create a source if none exists", (done) ->
         {_paths} = sseriesOfTubes
 
-        expect(_paths[originalUrl]).to.be.empty
+        expect(_paths[url]).to.be.empty
         plumbed req, res, done
-        expect(_paths[originalUrl]).to.respondTo "write"
+        expect(_paths[url]).to.respondTo "write"
         done()
 
       it "should use a source if it exists", (done) ->
         {_paths} = sseriesOfTubes
         plumbed req, res, done
-        source = _paths[originalUrl]
+        source = _paths[url]
 
         expect(source).to.respondTo "write"
         plumbed req, res, done
-        expect(_paths[originalUrl]).to.equal source
+        expect(_paths[url]).to.equal source
         done()
 
       it "should start polling the fn", (done) ->
@@ -174,7 +178,7 @@ describe "SSEriesOfTubes", ->
           sseriesOfTubes.once "poll", defer url
           plumbed req, res, done
 
-        expect(url).to.equal originalUrl
+        expect(url).to.equal url
         done()
 
       it "should emit a plumb event with original url", (done) ->
@@ -184,7 +188,7 @@ describe "SSEriesOfTubes", ->
           sseriesOfTubes.once "plumb", defer url
           plumbed req, res, done
 
-        expect(url).to.equal originalUrl
+        expect(url).to.equal url
         done()
 
       it "should emit a connection event with client", (done) ->
@@ -231,24 +235,20 @@ describe "SSEriesOfTubes", ->
       plumbed = sseriesOfTubes.plumb()
       plumbed req, res, done
 
-      source = sseriesOfTubes.source originalUrl
+      source = sseriesOfTubes.source url
 
       expect(source).to.exist
       done()
 
   describe "##combine", ->
-    route1   = null
-    route2   = null
     combined = null
 
     beforeEach ->
-      route1   = sseriesOfTubes.plumb (->), interval, "/route1"
-      route2   = sseriesOfTubes.plumb (->), interval, "/route2"
-      combined = sseriesOfTubes.combine "/route1", "/route2"
+      router.get "/route1", sseriesOfTubes.plumb (->), interval
+      router.get "/route2", sseriesOfTubes.plumb (->), interval
+      combined = sseriesOfTubes.combine router, "/route1", "/route2"
 
     afterEach ->
-      route1   = null
-      route2   = null
       combined = null
       sseriesOfTubes.destroy()
 
@@ -269,27 +269,27 @@ describe "SSEriesOfTubes", ->
       it "should create a source if none exists", (done) ->
         {_paths} = sseriesOfTubes
 
-        expect(_paths[originalUrl]).to.be.empty
+        expect(_paths[url]).to.be.empty
         combined req, res, done
-        expect(_paths[originalUrl]).to.respondTo "write"
+        expect(_paths[url]).to.respondTo "write"
         done()
 
       it "should use a source if it exists", (done) ->
         {_paths} = sseriesOfTubes
         combined req, res, done
-        source = _paths[originalUrl]
+        source = _paths[url]
 
         expect(source).to.respondTo "write"
         combined req, res, done
-        expect(_paths[originalUrl]).to.equal source
+        expect(_paths[url]).to.equal source
         done()
 
       it "should start polling the routes", (done) ->
         blackhat = spy()
         whitehat = spy()
-        route1   = sseriesOfTubes.plumb blackhat, interval, "/route1"
-        route2   = sseriesOfTubes.plumb whitehat, interval, "/route2"
-        combined = sseriesOfTubes.combine "/route1", "/route2"
+        router.get "/route3", sseriesOfTubes.plumb blackhat, interval
+        router.get "/route4", sseriesOfTubes.plumb whitehat, interval
+        combined = sseriesOfTubes.combine router, "/route3", "/route4"
 
         combined req, res, done
         await setTimeout defer(), 1.5 * interval * 1000
@@ -305,7 +305,7 @@ describe "SSEriesOfTubes", ->
           sseriesOfTubes.once "plumb", defer url
           combined req, res, done
 
-        expect(url).to.equal originalUrl
+        expect(url).to.equal url
         done()
 
       it "should emit a connection event with client", (done) ->
@@ -319,18 +319,18 @@ describe "SSEriesOfTubes", ->
       it "should pipe all responses to all the clients", (done) ->
         message    = subliminal: true
         twice      = hasrun:     "twice"
-        route1     = (rreq, rres, rnext) ->
+        route3     = (rreq, rres, rnext) ->
           rres.json message
           rres.text message
           rres.send message
-        route2     = (rreq, rres, rnext) ->
+        route4     = (rreq, rres, rnext) ->
           await setTimeout defer(), 3 * interval
           rres.json twice
           rres.text twice
           rres.send twice
-        sseriesOfTubes.plumb route1, interval, "/route1"
-        sseriesOfTubes.plumb route2, interval, "/route2"
-        combined = sseriesOfTubes.combine "/route1", "/route2"
+        router.get "/route3", sseriesOfTubes.plumb route3, interval
+        router.get "/route4", sseriesOfTubes.plumb route4, interval
+        combined = sseriesOfTubes.combine router, "/route3", "/route4"
 
         await
           res1       = extend {}, res
@@ -360,18 +360,18 @@ describe "SSEriesOfTubes", ->
       it "should pipe all responses to all the clients with event tags", (done) ->
         message    = subliminal: true
         twice      = hasrun:     "twice"
-        route1     = (rreq, rres, rnext) ->
+        route3     = (rreq, rres, rnext) ->
           rres.json message
           rres.text message
           rres.send message
-        route2     = (rreq, rres, rnext) ->
+        route4     = (rreq, rres, rnext) ->
           await setTimeout defer(), 3 * interval
           rres.json twice
           rres.text twice
           rres.send twice
-        sseriesOfTubes.plumb route1, interval, "/route1", "route-1"
-        sseriesOfTubes.plumb route2, interval, "/route2", "route-2"
-        combined = sseriesOfTubes.combine "/route1", "/route2"
+        router.get "/route3", sseriesOfTubes.plumb route3, interval, "route-3"
+        router.get "/route4", sseriesOfTubes.plumb route4, interval, "route-4"
+        combined = sseriesOfTubes.combine router, "/route3", "/route4"
 
         await
           res1       = extend {}, res
@@ -381,9 +381,9 @@ describe "SSEriesOfTubes", ->
             return unless data.match /data/
             if data.match /subliminal/
               expect(data).to.match /true/
-              expect(data).to.match /event: route-1/
+              expect(data).to.match /event: route-3/
             return unless data.match /twice/
-            expect(data).to.match /event: route-2/
+            expect(data).to.match /event: route-4/
             defer1()
 
           res2       = extend {}, res
@@ -391,9 +391,9 @@ describe "SSEriesOfTubes", ->
             return unless data.match /data/
             if data.match /subliminal/
               expect(data).to.match /true/
-              expect(data).to.match /event: route-1/
+              expect(data).to.match /event: route-3/
             return unless data.match /twice/
-            expect(data).to.match /event: route-2/
+            expect(data).to.match /event: route-4/
             defer2()
 
           combined req, res1, done
@@ -414,7 +414,7 @@ describe "SSEriesOfTubes", ->
           sseriesOfTubes.once "connection", defer client
           plumbed req, res, done
 
-        remover = sseriesOfTubes.removeClientAndMaybeStopPolling originalUrl, client.id
+        remover = sseriesOfTubes.removeClientAndMaybeStopPolling url, client.id
         await
           client.on "unpipe", defer()
           remover()
@@ -427,7 +427,7 @@ describe "SSEriesOfTubes", ->
           sseriesOfTubes.once "connection", defer client
           plumbed req, res, done
 
-        remover = sseriesOfTubes.removeClientAndMaybeStopPolling originalUrl, client.id
+        remover = sseriesOfTubes.removeClientAndMaybeStopPolling url, client.id
         remover()
 
         expect(sseriesOfTubes._pollers).to.be.empty
@@ -439,13 +439,13 @@ describe "SSEriesOfTubes", ->
           sseriesOfTubes.once "connection", defer client
           plumbed req, res, done
 
-        remover = sseriesOfTubes.removeClientAndMaybeStopPolling originalUrl, client.id
-        source  = sseriesOfTubes.source originalUrl
+        remover = sseriesOfTubes.removeClientAndMaybeStopPolling url, client.id
+        source  = sseriesOfTubes.source url
         expect(source).to.exist
 
         remover()
 
-        source2 = sseriesOfTubes.source originalUrl
+        source2 = sseriesOfTubes.source url
         expect(source2).to.not.exist
         expect(sseriesOfTubes._counts).to.be.empty
         done()
@@ -456,13 +456,13 @@ describe "SSEriesOfTubes", ->
           sseriesOfTubes.once "connection", defer client
           plumbed req, res, done
 
-        remover = sseriesOfTubes.removeClientAndMaybeStopPolling originalUrl, client.id
+        remover = sseriesOfTubes.removeClientAndMaybeStopPolling url, client.id
 
         await
           sseriesOfTubes.once "stop", defer url
           remover()
 
-        expect(url).to.equal originalUrl
+        expect(url).to.equal url
         done()
 
   describe "##removeClientAndMaybeStopMultiplePolling", ->
@@ -472,22 +472,22 @@ describe "SSEriesOfTubes", ->
 
     describe "returned function", ->
       it "should remove all pollers", (done) ->
-        sseriesOfTubes.plumb (->), interval, "/route1"
-        sseriesOfTubes.plumb (->), interval, "/route2"
+        router.get "/route1", sseriesOfTubes.plumb (->), interval
+        router.get "/route2", sseriesOfTubes.plumb (->), interval
         paths    = ["/route1", "/route2"]
-        combined = sseriesOfTubes.combine paths...
+        combined = sseriesOfTubes.combine router, paths...
 
         await
           sseriesOfTubes.once "connection", defer client
           combined req, res, done
 
-        source   = sseriesOfTubes.source originalUrl
+        source   = sseriesOfTubes.source url
         doubleoh = spy.on source, "unwrap"
-        remover = sseriesOfTubes.removeClientAndMaybeStopMultiplePolling originalUrl, client.id, paths
+        remover = sseriesOfTubes.removeClientAndMaybeStopMultiplePolling url, client.id, paths
         i = 0
         sseriesOfTubes.on "stop", (url) ->
           switch ++i
-            when 1 then expect(url).to.equal originalUrl
+            when 1 then expect(url).to.equal url
             when 2 then expect(url).to.equal "/route1"
             when 3
               expect(url).to.equal "/route2"
