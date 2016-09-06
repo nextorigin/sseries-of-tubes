@@ -76,13 +76,13 @@ returns Function route
 
 Creates a new StringTube source which polls a route to write to all clients for an endpoint.
 
-#### sseriesOfTubes.plumb(fn, interval, path)
+#### sseriesOfTubes.plumb(fn, interval, event)
 ```coffee
-sseriesOfTubes.plumb Function route, int interval, String path
+sseriesOfTubes.plumb Function route, int interval, String event
 ```
 returns Function route
 
-Creates a new StringTube source which polls a route to write to all clients for an endpoint, and remembers it as `path` for use with `sseriesOfTubes.combine()`.
+Creates a new StringTube source which polls a route to write to all clients for an endpoint, and will send the event `event` (in EventSource syntax) before sending data.
 
 #### sseriesOfTubes.plumb()
 ```coffee
@@ -92,21 +92,21 @@ returns Function route
 
 Creates a new StringTube source which writes to all clients for an endpoint.
 
-#### sseriesOfTubes.source(originalUrl)
+#### sseriesOfTubes.source(url)
 ```coffee
-sseriesOfTubes.source String originalUrl
+sseriesOfTubes.source String url
 ```
 returns StringTube source
 
 Retrieves the StringTube source for an endpoint.
 
-#### sseriesOfTubes.combine(paths...)
+#### sseriesOfTubes.combine(router, paths...)
 ```coffee
-sseriesOfTubes.combine (String path)...
+sseriesOfTubes.combine express.Router router, String paths...
 ```
 returns Function route
 
-Creates a new StringTube source by combining existing StringTube sources referenced by their `path`.  This way different combinations of streams can be provided without duplicating pollers.
+Creates a new StringTube source by combining existing StringTube sources referenced by their `path`.  This way different combinations of streams can be provided without duplicating pollers.  Requires a `router` conforming to the express.Router interface for method `handle`.
 
 #### sseriesOfTubes.destroy()
 ```coffee
@@ -124,19 +124,19 @@ On client connection, calls bound function with an instance of Client.
 
 #### poll
 ```coffee
-sseriesOfTubes.on "poll", (originalUrl) ->
+sseriesOfTubes.on "poll", (url) ->
 ```
 On route start poll, calls bound function with the url endpoint.
 
 #### plumb
 ```coffee
-sseriesOfTubes.on "plumb", (originalUrl) ->
+sseriesOfTubes.on "plumb", (url) ->
 ```
 On route start plumb (creates StringTube source), calls bound function with the url endpoint.
 
 #### stop
 ```coffee
-sseriesOfTubes.on "stop", (originalUrl) ->
+sseriesOfTubes.on "stop", (url) ->
 ```
 On last client disconnect, calls bound function with the url endpoint.
 
