@@ -8,6 +8,7 @@
     "test:modules": "mocha --recursive --compilers coffee:iced-coffee-script/register --require iced-coffee-coverage/register-istanbul test/",
     "test:report": "istanbul report",
     "test:coverage": "istanbul report text-summary lcov",
+    "watch": "iced --watch --bare --map -o ./ -c src/*",
     "build": "iced --bare --map -o ./ -c src/*"
   },
   "repository": {
