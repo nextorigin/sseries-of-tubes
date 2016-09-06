@@ -105,6 +105,21 @@ class SSEriesOfTubes extends EventEmitter
     client.once "close", @removeClientAndMaybeStopMultiplePolling url, client.id, paths
     source.pipe client
 
+  multiplex: (router, param = "streams") -> (req, res, next) =>
+    unless streams = req.query?[param] or req.body?[param]
+      err = new Error "query or body parameter required: #{param}"
+      err.statusCode = 400
+      return next err
+
+    streams = streams.split "," unless Array.isArray streams
+    streams.sort()
+
+    {baseUrl, path}   = req
+    req.originalURL   = req.url = sortedUrl = "#{baseUrl}#{path}?#{streams.join ","}"
+    source            = @combine router, streams...
+
+    source arguments...
+
   removeClientAndMaybeStopPolling: (url, id) -> =>
     source          = @_paths[url]
     result          = do => return [_client, i] for _client, i in @_clients when _client.id is id
