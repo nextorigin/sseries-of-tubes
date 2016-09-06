@@ -20,7 +20,6 @@ class SSEriesOfTubes extends EventEmitter
     @_paths   = {}
     @_counts  = {}
     @_pollers = {}
-    @_routes  = {}
     @_clients = []
 
     @server.once "listening", @pollKeepAlive
@@ -41,14 +40,14 @@ class SSEriesOfTubes extends EventEmitter
   checkHeaders: (req) ->
     req.accepts ["text/event-stream", "text/x-dom-event-stream"]
 
-  plumb: (fn, interval, path, event) -> @_routes[path] = (req, res, next) =>
+  plumb: (fn, interval, event) -> (req, res, next) =>
     return next new Errors.NotAcceptableError unless @checkHeaders req
 
-    {originalUrl}  = req
-    source         = @_paths[originalUrl]
+    {url}  = req
+    source = @_paths[url]
     unless source
-      source = @_paths[originalUrl] = new @constructor.StringTube
-      @_counts[originalUrl] = 0
+      source = @_paths[url] = new @constructor.StringTube
+      @_counts[url] = 0
 
       if fn and interval
         res.json = (data) =>
@@ -57,57 +56,57 @@ class SSEriesOfTubes extends EventEmitter
           res.flush?()
         res.text = res.send = res.json
         poll     = -> fn req, res, next
-        @_pollers[originalUrl] = setInterval poll, interval * 1000
+        @_pollers[url] = setInterval poll, interval * 1000
 
-        @emit "poll", originalUrl
+        @emit "poll", url
         process.nextTick poll
       else
-        @emit "plumb", originalUrl
+        @emit "plumb", url
 
     return if req.noClient
     client = new @constructor.EventClient req, res
     client.id = uuid.v4()
     @_clients.push client
-    @_counts[originalUrl]++
+    @_counts[url]++
 
     @emit "connection", client
 
-    client.once "close", @removeClientAndMaybeStopPolling originalUrl, client.id
+    client.once "close", @removeClientAndMaybeStopPolling url, client.id
     source.pipe client
 
-  source: (originalUrl) ->
-    @_paths[originalUrl]
+  source: (url) ->
+    @_paths[url]
 
-  combine: (paths...) -> (req, res, next) =>
+  combine: (router, paths...) -> (req, res, next) =>
     return next new Errors.NotAcceptableError unless @checkHeaders req
 
     for path in paths when not @_pollers[path]
       _req = Object.create req
       _res = Object.create res
-      extend _req, noClient: true, originalUrl: path
-      @_routes[path] _req, _res, next
+      extend _req, noClient: true, url: path
+      router.handle _req, _res, next
 
-    {originalUrl}  = req
-    source         = @_paths[originalUrl]
+    {url}  = req
+    source = @_paths[url]
     unless source
       sources = (@_paths[path] for path in paths)
-      source  = @_paths[originalUrl] = Merge sources, encoding: "utf8", decodeStrings: false
-      @_counts[originalUrl] = 0
-      @emit "plumb", originalUrl
+      source  = @_paths[url] = Merge sources, encoding: "utf8", decodeStrings: false
+      @_counts[url] = 0
+      @emit "plumb", url
 
     client = new @constructor.EventClient req, res
     client.id = uuid.v4()
     @_clients.push client
-    @_counts[originalUrl]++
+    @_counts[url]++
     @_counts[path]++ for path in paths
 
     @emit "connection", client
 
-    client.once "close", @removeClientAndMaybeStopMultiplePolling originalUrl, client.id, paths
+    client.once "close", @removeClientAndMaybeStopMultiplePolling url, client.id, paths
     source.pipe client
 
-  removeClientAndMaybeStopPolling: (originalUrl, id) -> =>
-    source          = @_paths[originalUrl]
+  removeClientAndMaybeStopPolling: (url, id) -> =>
+    source          = @_paths[url]
     result          = do => return [_client, i] for _client, i in @_clients when _client.id is id
     [client, index] = result if result?
 
@@ -115,19 +114,19 @@ class SSEriesOfTubes extends EventEmitter
       source.unpipe client
       @_clients.splice index, 1
 
-    remaining = --@_counts[originalUrl]
+    remaining = --@_counts[url]
     if remaining < 1
-      if @_pollers[originalUrl]
-        clearInterval @_pollers[originalUrl]
-        delete @_pollers[originalUrl]
+      if @_pollers[url]
+        clearInterval @_pollers[url]
+        delete @_pollers[url]
       source.unwrap?()
-      delete @_paths[originalUrl]
-      delete @_counts[originalUrl]
-      @emit "stop", originalUrl
+      delete @_paths[url]
+      delete @_counts[url]
+      @emit "stop", url
 
-  removeClientAndMaybeStopMultiplePolling: (originalUrl, id, paths) ->
+  removeClientAndMaybeStopMultiplePolling: (url, id, paths) ->
     removers = (@removeClientAndMaybeStopPolling path, id for path in paths)
-    removers.unshift @removeClientAndMaybeStopPolling originalUrl, id
+    removers.unshift @removeClientAndMaybeStopPolling url, id
     -> remover() for remover in removers
 
   destroy: ->
