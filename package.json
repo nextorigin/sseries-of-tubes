@@ -1,6 +1,6 @@
 {
   "name": "sseries-of-tubes",
-  "version": "1.3.0",
+  "version": "2.0.0",
   "description": "Takes Express/Connect routes and creates stream.Writable endpoints for Server Sent Events",
   "main": "./sseries-of-tubes.js",
   "scripts": {
