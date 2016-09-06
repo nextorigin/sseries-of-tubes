@@ -402,6 +402,206 @@ describe "SSEriesOfTubes", ->
         sseriesOfTubes.destroy()
         done()
 
+  describe "##multiplex", ->
+    route1   = null
+    route2   = null
+    plexed   = null
+
+    beforeEach ->
+      router.get "/route1", sseriesOfTubes.plumb (->), interval
+      router.get "/route2", sseriesOfTubes.plumb (->), interval
+
+      plexed = sseriesOfTubes.multiplex router
+      router.get "/plexed", plexed
+      extend req, query: streams: "/route1,/route2"
+
+    afterEach ->
+      route1   = null
+      route2   = null
+      plexed   = null
+      sseriesOfTubes.destroy()
+
+    it "should return a function", ->
+      expect(plexed).to.be.a "function"
+
+    describe "returned function", ->
+      it "should call next with 400 error and return if parameter missing", (done) ->
+        nope = {}
+        next = (err) ->
+          expect(err.statusCode).to.equal 400
+          expect(err.toString()).to.match /parameter required/
+          expect(err.toString()).to.match /streams/
+          done()
+
+        result = plexed nope, null, next
+        expect(result).to.be.empty
+
+      it "should accept a custom parameter for streams", (done) ->
+        plexed = sseriesOfTubes.multiplex router, "rivers"
+        _req   = extend reqMock, query: rivers: "/route1,/route2"
+
+        plexed _req, res, done
+        done()
+
+      it "should create a source if none exists", (done) ->
+        {_paths} = sseriesOfTubes
+        req.url  = "/plexed?streams=/route1,/route2"
+
+        expect(_paths[req.url]).to.be.empty
+        router.handle req, res, done
+        expect(_paths[req.url]).to.respondTo "write"
+        done()
+
+      it "should use a source if it exists, even if streams are sorted differently", (done) ->
+        {_paths} = sseriesOfTubes
+        req.url  = "/plexed?streams=/route1,/route2"
+        errIfErr = (err) -> done err if err
+
+        router.handle req, res, done
+        source = _paths[req.url]
+
+        expect(source).to.respondTo "write"
+        req.url  = "/plexed?streams=/route2,/route1"
+        router.handle req, res, errIfErr
+        expect(_paths[req.url]).to.equal source
+        done()
+
+      it "should start polling the routes", (done) ->
+        blackhat = spy()
+        whitehat = spy()
+        req.url  = "/plexed?streams=/route3,/route4"
+        req.query = streams: "/route3,/route4"
+        router.get "/route3", sseriesOfTubes.plumb blackhat, interval
+        router.get "/route4", sseriesOfTubes.plumb whitehat, interval
+
+        router.handle req, res, done
+        await setTimeout defer(), 1.5 * interval * 1000
+
+        expect(blackhat.calledTwice).to.be.true
+        expect(whitehat.calledTwice).to.be.true
+        done()
+
+      it "should start polling the routes from an array of streams", (done) ->
+        blackhat = spy()
+        whitehat = spy()
+        req.url  = "/plexed?streams=/route3,/route4"
+        req.query = streams: ["/route3", "/route4"]
+        router.get "/route3", sseriesOfTubes.plumb blackhat, interval
+        router.get "/route4", sseriesOfTubes.plumb whitehat, interval
+
+        router.handle req, res, done
+        await setTimeout defer(), 1.5 * interval * 1000
+
+        expect(blackhat.calledTwice).to.be.true
+        expect(whitehat.calledTwice).to.be.true
+        done()
+
+      it "should emit a plumb event with original url", (done) ->
+        plexed = sseriesOfTubes.plumb()
+
+        await
+          sseriesOfTubes.once "plumb", defer url
+          plexed req, res, done
+
+        expect(url).to.equal url
+        done()
+
+      it "should emit a connection event with client", (done) ->
+        await
+          sseriesOfTubes.once "connection", defer client
+          plexed req, res, done
+
+        expect(client).to.be.an.instanceof EventClient
+        done()
+
+      it "should pipe all responses to all the clients", (done) ->
+        message    = subliminal: true
+        twice      = hasrun:     "twice"
+        req.url    = "/plexed?streams=/route3,/route4"
+        route3     = (rreq, rres, rnext) ->
+          rres.json message
+          rres.text message
+          rres.send message
+        route4     = (rreq, rres, rnext) ->
+          await setTimeout defer(), 3 * interval
+          rres.json twice
+          rres.text twice
+          rres.send twice
+        router.get "/route3", sseriesOfTubes.plumb route3, interval
+        router.get "/route4", sseriesOfTubes.plumb route4, interval
+        plexed = sseriesOfTubes.multiplex router
+
+        await
+          res1       = extend {}, res
+          defer1     = defer()
+          defer2     = defer()
+          res1.write = (data) ->
+            return unless data.match /data/
+            if data.match /subliminal/
+              expect(data).to.match /true/
+            return unless data.match /twice/
+            defer1()
+
+          res2       = extend {}, res
+          res2.write = (data) ->
+            return unless data.match /data/
+            if data.match /subliminal/
+              expect(data).to.match /true/
+            return unless data.match /twice/
+            defer2()
+
+          router.handle req, res1, done
+          router.handle req, res2, done
+
+        sseriesOfTubes.destroy()
+        done()
+
+      it "should pipe all responses to all the clients with event tags", (done) ->
+        message    = subliminal: true
+        twice      = hasrun:     "twice"
+        req.url    = "/plexed?streams=/route3,/route4"
+        route3     = (rreq, rres, rnext) ->
+          rres.json message
+          rres.text message
+          rres.send message
+        route4     = (rreq, rres, rnext) ->
+          await setTimeout defer(), 3 * interval
+          rres.json twice
+          rres.text twice
+          rres.send twice
+        router.get "/route3", sseriesOfTubes.plumb route3, interval, "route-3"
+        router.get "/route4", sseriesOfTubes.plumb route4, interval, "route-4"
+        plexed = sseriesOfTubes.multiplex router
+
+        await
+          res1       = extend {}, res
+          defer1     = defer()
+          defer2     = defer()
+          res1.write = (data) ->
+            return unless data.match /data/
+            if data.match /subliminal/
+              expect(data).to.match /true/
+              expect(data).to.match /event: route-3/
+            return unless data.match /twice/
+            expect(data).to.match /event: route-4/
+            defer1()
+
+          res2       = extend {}, res
+          res2.write = (data) ->
+            return unless data.match /data/
+            if data.match /subliminal/
+              expect(data).to.match /true/
+              expect(data).to.match /event: route-3/
+            return unless data.match /twice/
+            expect(data).to.match /event: route-4/
+            defer2()
+
+          router.handle req, res1, done
+          router.handle req, res2, done
+
+        sseriesOfTubes.destroy()
+        done()
+
   describe "##removeClientAndMaybeStopPolling", ->
     it "should return a function", ->
       remover = sseriesOfTubes.removeClientAndMaybeStopPolling()
