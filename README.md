@@ -5,6 +5,7 @@
 [![Dependency Status][dependency]][david]
 [![devDependency Status][dev-dependency]][david]
 [![Downloads][downloads]][npm]
+[![Greenkeeper badge][greenkeeper-enabled]][greenkeeper]
 
 Takes Express/Connect routes and creates stream.Writable endpoints for Server Sent Events.
 
@@ -163,3 +164,5 @@ MIT
   [downloads]: https://img.shields.io/npm/dm/sseries-of-tubes.svg?style=flat-square
   [npm]: https://www.npmjs.org/package/sseries-of-tubes
   [npm-stats]: https://nodei.co/npm/sseries-of-tubes.png?downloads=true&downloadRank=true&stars=true
+  [greenkeeper-enabled]: https://badges.greenkeeper.io/nextorigin/spine-awaitajax.svg
+  [greenkeeper]: https://greenkeeper.io/
