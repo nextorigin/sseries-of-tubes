@@ -1,5 +1,7 @@
 # sseries-of-tubes
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/nextorigin/sseries-of-tubes.svg)](https://greenkeeper.io/)
+
 [![Build Status][ci-master]][travis-ci]
 [![Coverage Status][coverage-master]][coveralls]
 [![Dependency Status][dependency]][david]
