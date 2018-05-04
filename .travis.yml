@@ -5,6 +5,7 @@ node_js:
   - "5"
   - "4"
   - "0.12"
+  - "10"
 after_success:
   - "npm run coverage-report"
   - "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls"
